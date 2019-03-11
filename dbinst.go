@@ -24,12 +24,13 @@ func createNewDbInst(host string, port int, user string,
     err := db.connect() 
     if err != nil {
         fmt.Println("db connect failed ", err)
+        logger.Println("db connect failed ", err)
     }
     return db, err
 }
 
 func (db *dbInst) connect() error {
-    connStr := "user=" + user + " password=" + password +
+    connStr := "user=" + db.user + " password=" + db.password +
         " sslmode=disable"
     var err error
     db.dbConn, err = sql.Open("postgres", connStr)
@@ -44,19 +45,20 @@ func (db *dbInst) query(qStr string) (*sql.Rows, error) {
     return rows, err
 }
 
-func (db dbInst) queryWithTime(qStr string) (*sql.Rows, time.Duration, error) {
-    fmt.Println("executing query : ", qStr)
+func (db dbInst) queryWithTime(qStr string) ([]TimeStampResults, time.Duration, error) {
+    logger.Println("executing query : ", qStr)
     beginT := time.Now()
     rows, err := db.query(qStr)
     durT := time.Since(beginT)
-    return rows, durT, err
+    return extractTimeAndStore(rows), durT, err
 }
 
 func (db *dbInst) exec(execStr string) error {
     _, err := db.dbConn.Exec(execStr)
     if err != nil {
         fmt.Println("db exec for " + execStr)
-        fmt.Println(err)
+        logger.Println("db exec for " + execStr)
+        logger.Println(err)
     }
     return err
 }

@@ -1,47 +1,158 @@
 package main
 
 import (
-  "database/sql"
-  "fmt"
    "log"
+   "os"
+   "flag"
+    "sync"
+    "fmt"
 
   _ "github.com/lib/pq"
 )
 
-const (
-  host     = "localhost"
-  port     = 5432
-  user     = "postgres"
-  password = "password"
-  dbname   = "cpu_usage"
+// set of variables from the user for the command line tool
+// NOTE : 
+// (1) see usage
+// (2) can be potentially improved to load the configuration from a file
+var (
+  host      *string
+  port      *int
+  user      *string 
+  password  *string
+  tablename *string 
+  filename  *string
+  workers   *int
 )
+
+// logger
+var logger  *log.Logger
+var f       *os.File
+var err     error
+
+const (
+    LOGFILE = "run.log"
+)
+
+// Initializes the log file
+func initLog() {
+    f, err = os.OpenFile(LOGFILE,
+        os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        log.Println(err)
+     }
+
+     logger = log.New(f, "", log.LstdFlags)
+     logger.Println("starting logging")
+}
+
+// main process function to synchronize across worker threads
+func process() {
+    var wg sync.WaitGroup
+
+    wg.Add(*workers)
+
+    // create channels for send and receive
+    // send : the query host parameters which have the time
+    //          slices to be queried for
+    // recv : the set of results from the database for each query
+    qParams := make(chan QueryHostParams,  100)
+    results := make(chan *QueryHostResults, 100)
+    dbConn := []dbInst{}
+
+    // create the database instance and feed it to the worker
+    // threads
+    for i := 0; i < *workers; i++ {
+        var db  dbInst
+
+        logger.Printf("%d -> creating db\n", i)
+        db, err = createNewDbInst(*host, *port, *user, *password,
+            *tablename)
+        dbConn = append(dbConn, db)
+
+        if err != nil {
+            fmt.Println("creating a new db connection failed ")
+            logger.Println("creating a new db connection failed")
+            logger.Println(err)
+            os.Exit(1)
+        }
+        defer dbConn[i].close()
+    }
+
+    // start the workers
+    for i := 0; i < *workers; i++ {
+        logger.Printf("setting up worker : %d\n", i)
+        go queryWorker(i, dbConn[i], qParams, results, &wg)
+    }
+
+    // pass in the query parameters which have the time slices
+    for _, v := range queryHostMap {
+        qParams <- v
+    }
+
+    logger.Printf("Closing query hosts params channel\n")
+    close(qParams)
+
+    // wait till all the threads have completed
+    wg.Wait()
+
+    // close the result channel
+    close(results)
+
+    logger.Printf("results")
+
+
+    // gather the results
+    allTimes := []int64{}
+    qhr := []*QueryHostResults{}
+    for q := range results {
+        qhr = append(qhr, q)
+        allTimes = append(allTimes, q.timeTaken...)
+    }
+
+    // compute the median/mean query performance and per-host
+    // statistics
+    computeAndPrint(allTimes)
+    printHostResults(qhr)
+}
+
+func printArgs() {
+    logger.Printf("dbport = %d\n", *port)
+    logger.Printf("host = %s\n", *host)
+    logger.Printf("user = %s\n", *user);
+    logger.Printf("password = %s\n", *password)
+    logger.Printf("table = %s\n", *tablename)
+    logger.Printf("filename = %s\n", *filename)
+    logger.Printf("workerd = %d\n", workers)
+}
 
 func main() {
-  connStr := "user=postgres password=password sslmode=disable"
-  db, err := sql.Open("postgres", connStr)
-  if err != nil {
-    panic(err)
-  }
-  defer db.Close()
+    initLog()
+    defer f.Close()
+    defer logger.Println("end query_performance")
 
-    fmt.Println("enter..")
-  host := " host1"
-  rows, err := db.Query(`SELECT min(usage) from cpu_usage where host=$1`, host)
-var (
-    usage float32
-)
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&usage)
-    if err != nil {
-        log.Fatal(err)
+    // set up flags for input parameters
+    port = flag.Int("dbport", 5432, "db port to connect to")
+    user = flag.String("username", "postgres", "db user name")
+    password = flag.String("password", "password", "db user password")
+    tablename = flag.String("tablename", "cpu_usage", "table to query")
+    host = flag.String("host", "localhost", "destination hostname for db")
+    workers = flag.Int("workers", 1, "number of worker threads")
+    filename = flag.String("file", "", "filename containing the query parameters")
+
+    flag.Parse()
+    printArgs()
+
+    if *filename == "" {
+        flag.Usage()
+        os.Exit(1)
     }
-    log.Println(usage)
-  }
-  err = db.Ping()
-  if err != nil {
-    panic(err)
-  }
 
-  fmt.Println("Successfully connected!")
+    // parse the input CSV file - parse would populate the
+    // global QueryHostParams which contain the time slices
+    err = parseCsv(*filename)
+    if err != nil {
+        os.Exit(1)
+    }
+
+    process()
 }

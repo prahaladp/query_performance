@@ -4,7 +4,7 @@ import (
     "bufio"
     "encoding/csv"
     "fmt"
-    "io"
+    // "io"
     "os"
     "time"
     "strings"
@@ -48,6 +48,8 @@ func parseParams(hostName string, startT string, endT string) error {
         fmt.Println(err)
         return err
     }
+
+    logger.Printf("Adding times %s %s\n", startT, endT)
     addTimeRange(hostName, TimeRange{st, et})
     return nil
 }
@@ -60,15 +62,17 @@ func parseCsv(fileName string) error {
     }
 
     reader := csv.NewReader(bufio.NewReader(csvFile))
-    for {
-        line, error := reader.Read()
-        if error == io.EOF {
-            break
-        } else if error != nil {
-            fmt.Println(err)
-            return err
+    lines, e := reader.ReadAll()
+    if e != nil {
+        logger.Fatalf("error reading all lines: %v", err)
+    }
+        
+    for i, line := range lines {
+        if i == 0 {
+            // skip the first line
+            continue
         }
-
+        logger.Printf("%s %s %s\n", line[0], line[1], line[2])
         parseParams(line[0], line[1], line[2])
     }
     return nil

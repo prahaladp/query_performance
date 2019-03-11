@@ -27,7 +27,7 @@ func TestSimpleWorker(t *testing.T) {
         fmt.Println(err)
     }
 
-    //err = db.clearTable()
+    err = db.clearTable()
     if err != nil {
         t.Errorf("clearing the table failed")
         fmt.Println(err)
@@ -46,25 +46,21 @@ func TestSimpleWorker(t *testing.T) {
     var wg sync.WaitGroup
     wg.Add(1)
 
-    go queryWorker(db, qParams, results, &wg)
+    go queryWorker(1, db, qParams, results, &wg)
 
     for _, v := range queryHostMap {
         qParams <- v
     }
 
-    fmt.Printf("Closing query hosts params channel\n")
+    logger.Printf("Closing query hosts params channel\n")
     close(qParams)
-    fmt.Printf("waiting")
     wg.Wait()
-    fmt.Printf("results")
+    logger.Printf("results")
 
     allTimes := []int64{}
     for q := range results {
         allTimes = append(allTimes, q.timeTaken...)
     }
 
-    median := computeMedian(allTimes)
-    mean := computeMean(allTimes)
-    fmt.Printf(" mean duration = %s\n", time.Duration(mean).String())
-    fmt.Printf(" median duration = %s\n", time.Duration(median).String())
+    computeAndPrint(allTimes)
 }

@@ -1,8 +1,8 @@
 package main
 import (
-    "fmt"
     "database/sql"
     "time"
+    "fmt"
 )
 
 type TimeRange struct {
@@ -35,28 +35,28 @@ func makeNewQueryHostMap() {
 
 func newqueryHostParams(hName string) QueryHostParams {
     var nqp = QueryHostParams{hostName:hName}
-    fmt.Println(" adding ", nqp)
+    logger.Println(" adding ", nqp)
     return nqp
 }
 
 func addTimeRange(hostName string, tr TimeRange) {
     if qp, exists := queryHostMap[hostName]; exists == false {
-        fmt.Println("Adding a new hostName ", hostName)
+        logger.Println("Adding a new hostName ", hostName)
         qp = newqueryHostParams(hostName)
         qp.trList = append(qp.trList, tr)
-        fmt.Println(" new ", qp)
+        logger.Println(" new ", qp)
         queryHostMap[hostName] = qp
     } else {
-        fmt.Println("Appending to existing host")
+        logger.Println("Appending to existing host")
         qp.trList = append(qp.trList, tr)
         queryHostMap[hostName] = qp
-        fmt.Println(" new ", qp)
+        logger.Println(" new ", qp)
     }
 }
 
 func getqueryHostParams(hostName string) (QueryHostParams, bool) {
     qp, exists := queryHostMap[hostName]
-    fmt.Println(" query for ", hostName, " returned ", qp, exists)
+    logger.Println(" query for ", hostName, " returned ", qp, exists)
     return qp, exists
 }
 
@@ -65,82 +65,56 @@ func addOneMinute(t time.Time) time.Time {
 }
 
 func generateMinMaxQueryString(table string, host string,
-    ts time.Time) (string, string) {
-    minStr := fmt.Sprintf("SELECT min(usage) from %s where host =" + 
-        "'%s' and ts='%s'", table, host, convertTimeToString(ts))
-    maxStr := fmt.Sprintf("SELECT max(usage) from %s where host =" +
-        "'%s' and ts='%s'", table, host, convertTimeToString(ts))
+    startTs time.Time, endTs time.Time) string {
+    queryStr := fmt.Sprintf("SELECT time_bucket('1 minute', ts) AS one_min," +
+        "max(usage), min(usage) from %s where host='%s' " +
+        "and ts >='%s' and ts <= '%s' GROUP BY one_min",
+        table, host, convertTimeToString(startTs),
+        convertTimeToString(endTs))
 
-    return minStr, maxStr
+    return queryStr
 }
 
-func getTimeFromRows(r *sql.Rows) float32 {
-    var t float32
-    t = 0.0
+func extractTimeAndStore(r *sql.Rows) []TimeStampResults {
+    var minU    float32
+    var maxU    float32
+    var t       time.Time
+
+    usageD := []TimeStampResults{}
+
     if r == nil {
-        return t
+        return usageD
     }
 
     for r.Next() {
-        err := r.Scan(&t)
-        fmt.Printf("scanning %f\n", t)
+        err := r.Scan(&t, &maxU, &minU)
+        logger.Printf("row scan generated %s %f %f\n",
+            convertTimeToString(t), minU, maxU)
         if err != nil {
-            fmt.Println("get min/max usage time failed ")
-            fmt.Println(err)
+            logger.Println("get min/max usage time failed ")
+            logger.Println(err)
         }
-        break
+        usageData := TimeStampResults{ts: t, mn: minU, mx: maxU}
+        usageD = append(usageD, usageData)
     }
-    return t
+    return usageD
 }
 
 func (qhr *QueryHostParams) findMinMaxForInterval(db Database, tr TimeRange,
         qr *QueryHostResults) {
-    currT := tr.st
-    endT := tr.et
-    for currT.Before(endT) || currT.Equal(endT) {
-        var minR, maxR *sql.Rows
-        var d time.Duration
-        var e error
-        var minTime, maxTime float32
+    queryStr := generateMinMaxQueryString(db.getTableName(),
+        qhr.hostName, tr.st, tr.et)
 
-        minStr, maxStr := generateMinMaxQueryString(
-            db.getTableName(), qhr.hostName,
-            currT)
-        currT = addOneMinute(currT)
-
-        // NOTE : we count query times even if the query failed or 
-        // if the query returned no results
-
-        minR, d, e = db.queryWithTime(minStr)
-
-        qr.timeTaken = append(qr.timeTaken, int64(d))
-        if minR != nil { 
-            minTime = getTimeFromRows(minR)
-            defer minR.Close()
-        }        
-
-        if e != nil {
-            fmt.Printf("query %s failed with %s", minStr, e)
-            continue
-        }
-
-        maxR, d, e = db.queryWithTime(maxStr)
-
-        qr.timeTaken = append(qr.timeTaken, int64(d))
-
-        if maxR != nil {
-            maxTime = getTimeFromRows(maxR)
-            defer maxR.Close()
-        }
-
-        if e != nil {
-            fmt.Printf("query %s failed with %s", maxStr, e)
-            continue
-        }
-
-        usageData := TimeStampResults{ts: currT, mn: minTime, mx: maxTime}
-        qr.usageResults = append(qr.usageResults, usageData)
+    usageData, d, e := db.queryWithTime(queryStr)
+    qr.timeTaken = append(qr.timeTaken, int64(d))
+    if e != nil {
+        logger.Printf("query %s failed with %s", queryStr, e)
+        return
     }
+    logger.Printf("number of entries from database query = %d\n", len(usageData))
+    logger.Printf("existing entries in usage = %d\n", len(qr.usageResults))
+    qr.usageResults = append(qr.usageResults, usageData...)
+    logger.Printf("new number of entries = %d\n", len(qr.usageResults))
 }
 
 func (qhr *QueryHostParams) findMinMaxForIntervals(db Database) *QueryHostResults {
@@ -149,8 +123,18 @@ func (qhr *QueryHostParams) findMinMaxForIntervals(db Database) *QueryHostResult
     for _, trange := range qhr.trList {
         qhr.findMinMaxForInterval(db, trange, &qResults)
     }
-    fmt.Println("queryHostParams :")
-    fmt.Println(qhr)
-    fmt.Println("queryHostParams ----")
+    logger.Println("queryHostParams :")
+    logger.Println(qhr)
+    logger.Println("queryHostParams ----")
     return &qResults
+}
+
+func printHostResults(results []*QueryHostResults) {
+    for _, q := range results {
+        fmt.Printf("Hostname : %s\n", q.hostName)  
+        for _, ur := range q.usageResults {
+            fmt.Printf("\t%s, %2.2f, %2.2f\n", convertTimeToString(ur.ts),
+                ur.mn, ur.mx)
+        }
+    }
 }

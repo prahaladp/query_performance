@@ -1,17 +1,23 @@
 package main
 
 import (
-    "database/sql"
     "time"
 )
 
 type DummyDatabase struct {
+    usageResults    []TimeStampResults
 }
 
-func (db DummyDatabase) queryWithTime(qStr string) (*sql.Rows, time.Duration, error) {
+func (db DummyDatabase) queryWithTime(qStr string) ([]TimeStampResults, time.Duration, error) {
+    logger.Printf("dummydatabase : %s\n", qStr)
+    logger.Println(db.usageResults)
     beginT := time.Now()
     durT := time.Since(beginT)
-    return nil, durT, nil
+    return db.usageResults, durT, nil
+}
+
+func (db *DummyDatabase) setTimeStampResults(usageD []TimeStampResults) {
+    db.usageResults = usageD
 }
 
 func (db DummyDatabase) getTableName() string {

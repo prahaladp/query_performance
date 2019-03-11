@@ -3,7 +3,6 @@ package main
 import (
     "testing"
     "time"
-    "fmt"
 )
 
 func TestBasic(t *testing.T) {
@@ -43,16 +42,24 @@ func TestQueryResults1(t *testing.T) {
         t.Errorf("Didn't find host h1");
     }
 
-    fmt.Printf("Number of entries = %d\n", len(qp.trList))
+    logger.Printf("Number of entries = %d\n", len(qp.trList))
     if len(qp.trList) != 2 {
         t.Errorf("Number of elements in time range is incorrect")
     }
 
     db := DummyDatabase{}
+    usageResults := []TimeStampResults{}
+    usageResults = append(usageResults, TimeStampResults{ts:st.Add(time.Minute),
+        mn: 50.0, mx: 67.1})
+    usageResults = append(usageResults, TimeStampResults{ts:st.Add(time.Minute * 3),
+            mn: 50.0, mx: 67.1})
+    db.setTimeStampResults(usageResults)
     qhr := qp.findMinMaxForIntervals(db)
 
-    fmt.Printf("Usage results = %d\n", len(qhr.usageResults))
-    if len(qhr.usageResults) != 72 {
-        t.Errorf("Incorrect number of entries in the results")
+    logger.Printf("Usage results = %d\n", len(qhr.usageResults))
+    logger.Printf("Time samples = %d\n", len(qhr.timeTaken))
+
+    if len(qhr.usageResults) != 4 {
+        t.Errorf("Incorrect number of usage results")
     }
 }

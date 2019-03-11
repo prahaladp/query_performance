@@ -4,9 +4,9 @@ import (
     "fmt"
     "database/sql"
     "time"
+    "os/exec"
     "testing"
 )
-
 
 func TestSimpleDbOps(t *testing.T) {
     const (
@@ -22,13 +22,13 @@ func TestSimpleDbOps(t *testing.T) {
 
     if err != nil {
         t.Errorf("creating a new instance failed ")
-        fmt.Println(err)
+        logger.Println(err)
     }
 
     err = db.clearTable()
     if err != nil {
         t.Errorf("clearing the table failed")
-        fmt.Println(err)
+        logger.Println(err)
     }
 
     var cUsage float32
@@ -41,7 +41,7 @@ func TestSimpleDbOps(t *testing.T) {
         "'%s', %f)", cTimeStr, cHost, cUsage))
     if err != nil {
         t.Errorf("inserting a row failed")
-        fmt.Println(err)
+        logger.Println(err)
     }
 
     var rows *sql.Rows
@@ -53,9 +53,9 @@ func TestSimpleDbOps(t *testing.T) {
         err = rows.Scan(&cpuTable.ts, &cpuTable.host, &cpuTable.usage)
         if err != nil {
             t.Errorf("row scan failed ");
-            fmt.Println(err)
+            logger.Println(err)
         }
-        fmt.Println(cpuTable)
+        logger.Println(cpuTable)
         if cpuTable.usage != cUsage {
             t.Errorf("retrieved incorrect cpu usage")
         }
@@ -66,7 +66,7 @@ func TestSimpleDbOps(t *testing.T) {
     db.clearTable()
 }
 
-func TestComponentTest(t *testing.T) {
+func TestComponentTest1(t *testing.T) {
     makeNewQueryHostMap()
 
     const (
@@ -122,7 +122,8 @@ func TestComponentTest(t *testing.T) {
         t.Errorf("Incorrect number of min/max results")
     }
 
-    if len(qhr.timeTaken) != 2 {
+    fmt.Printf("number of time samples = %d\n", len(qhr.timeTaken))
+    if len(qhr.timeTaken) != 1 {
         t.Errorf("Incorrect number of time samples")
     } 
 }
