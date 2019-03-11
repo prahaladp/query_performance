@@ -6,7 +6,7 @@ This tool measures the query performance for time series database
 Assumptions : the data has already been stored in the database
 ```
 
-###Usage
+#### Usage
 ```go
 Usage of ./query_performance:\
   -dbport int\
@@ -28,7 +28,7 @@ Usage of ./query_performance:\
 The filename is the input file which contains the time slots per host
 for which data is required.
 
-###File Format 
+#### File Format 
 The file is in the following format
 ```go
 hostname,start_time,end_time
@@ -37,7 +37,7 @@ host_000001,2017-01-02 13:02:02,2017-01-02 14:02:02
 ...
 ```
 
-###Sample Output 
+#### Sample Output 
 
 ```go
 $ ./query_performance  --file ./testdata/query_usage.csv --workers 1 --dbport 5432
@@ -82,7 +82,7 @@ Workers Mean              Median
 
 The code has some documentation  to allow initial understanding of the data structures. Most of the important data structures are in queryParams.go
 
-###Tests :
+#### Tests :
 
 ```go
 go test -v
@@ -119,8 +119,12 @@ coverage: 62.4% of statements
 ok
 ```
 
-###TBD (next steps)
+#### TBD (next steps)
 
+1. More flexibity with file formats (input currently has to be in the format shown)
 
+2. Better code constistency (the code has to be sanitized for better naming convention)
 
-        
+3. More optimal SQL query by concatenating time slices
+
+4. Output host information to a file
