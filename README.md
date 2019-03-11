@@ -1,13 +1,13 @@
-# query_performance
+# query_performance\
 
-This tool measures the query performance for time series database.
-Assumptions : the data has already been stored in the database
+This tool measures the query performance for time series database.\
+Assumptions : the data has already been stored in the database\
 
-Usage
+Usage\
 
-Usage of ./query_performance:
-  -dbport int
-        db port to connect to (default 5432)
+Usage of ./query_performance:\
+  -dbport int\
+        db port to connect to (default 5432)\
   -file string
         filename containing the query parameters
   -host string
