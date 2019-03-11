@@ -4,7 +4,6 @@ import (
     "fmt"
     "database/sql"
     "time"
-    "os/exec"
     "testing"
 )
 
