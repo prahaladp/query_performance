@@ -1,10 +1,13 @@
-# query_performance\
+## query_performance
 
-This tool measures the query performance for time series database.\
-Assumptions : the data has already been stored in the database\
+This tool measures the query performance for time series database
 
-Usage\
+```go
+Assumptions : the data has already been stored in the database
+```
 
+###Usage
+```go
 Usage of ./query_performance:\
   -dbport int\
         db port to connect to (default 5432)\
@@ -20,17 +23,23 @@ Usage of ./query_performance:\
         db user name (default "postgres")
   -workers int
         number of worker threads (default 1)
+```
       
 The filename is the input file which contains the time slots per host
 for which data is required.
- 
+
+###File Format 
 The file is in the following format
- hostname,start_time,end_time
+```go
+hostname,start_time,end_time
 host_000008,2017-01-01 08:59:22,2017-01-01 09:59:22
 host_000001,2017-01-02 13:02:02,2017-01-02 14:02:02
 ...
+```
 
-Sample Output 
+###Sample Output 
+
+```go
 $ ./query_performance  --file ./testdata/query_usage.csv --workers 1 --dbport 5432
 ---------------------------------
  number of samples = 200
@@ -56,10 +65,12 @@ Hostname : host_000001
         2017-01-02 15:36:00, 0.65, 84.09
         2017-01-02 15:37:00, 18.50, 82.74
 
+```
 
 Sample output from the tool
 NOTE : this is obtained from multiple runs by changing the worker threads
 
+```go
 Workers Mean              Median
 ---------------------------------------
 1         31.626721ms       30.928894ms
@@ -67,11 +78,13 @@ Workers Mean              Median
 4         56.676925ms       60.135168ms
 8         113.060989ms    122.369957ms
 16      148.308213ms      156.706489ms
+```go
 
-The code should be documented to allow initial understanding of the data structures.
-Most of the important data structures are in queryParams.go
+The code has some documentation  to allow initial understanding of the data structures. Most of the important data structures are in queryParams.go
 
-Tests :
+###Tests :
+
+```go
 go test -v
 === RUN   TestMedian
 --- PASS: TestMedian (0.00s)
@@ -95,15 +108,18 @@ number of time samples = 1
 --- PASS: TestSimpleWorker (0.02s)
 PASS
 ok
+```
 
 NOTE : (obviously) needs more tests
 
+```go
 $ go test -cover
 PASS
 coverage: 62.4% of statements
 ok
+```
 
-
+###TBD (next steps)
 
 
 
