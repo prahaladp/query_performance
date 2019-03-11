@@ -8,6 +8,8 @@ import (
   _ "github.com/lib/pq"
 )
 
+// represents information required for a database connection to
+// TimeScaleDb (or any SQL like database
 type dbInst struct {
     host        string
     port        int
@@ -17,6 +19,7 @@ type dbInst struct {
     dbConn      *sql.DB
 }
 
+// creates a new dbInst 
 func createNewDbInst(host string, port int, user string,
     password string, table string) (dbInst, error) { 
     var db = dbInst{host: host, port: port, user: user,

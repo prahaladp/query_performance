@@ -6,6 +6,10 @@ import (
     "time"
 )
 
+// set of compute utilities for calculating the mean and median
+// of an array of int64's - these represent the time taken for
+// the queries
+
 type int64arr []int64
 func (a int64arr) Len() int { return len(a) }
 func (a int64arr) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

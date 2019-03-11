@@ -4,11 +4,13 @@ import (
     "time"
 )
 
+// represents a dummy database object for testing purposes.
 type DummyDatabase struct {
     usageResults    []TimeStampResults
 }
 
-func (db DummyDatabase) queryWithTime(qStr string) ([]TimeStampResults, time.Duration, error) {
+func (db DummyDatabase) queryWithTime(qStr string) (
+    []TimeStampResults, time.Duration, error) {
     logger.Printf("dummydatabase : %s\n", qStr)
     logger.Println(db.usageResults)
     beginT := time.Now()

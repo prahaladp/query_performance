@@ -11,6 +11,11 @@ import (
     "errors"
 )
 
+// This is used for CSV parsing and parsing the input file so
+// the data is stored in QueryHostParams and subsequently used for
+// SQL queries etc
+
+// manipulates the input time string into the required format
 func validateAndTransformTime(st string) (string, error) {
     var tok     []string
     var err     error
@@ -22,6 +27,10 @@ func validateAndTransformTime(st string) (string, error) {
     return tok[0] + "T" + tok[1] + "Z", err
 }
 
+// Parses each entry in the SQL file - this is in the format
+// <hostname:string>, <time:string>, <time:string>
+// This calls into addTimeRange to store the parsed data in a
+// map indexed by "hostname"
 func parseParams(hostName string, startT string, endT string) error {
     var st, et time.Time
     var err error
@@ -54,6 +63,8 @@ func parseParams(hostName string, startT string, endT string) error {
     return nil
 }
 
+// main entry point to open the file and use csv package
+// to parse the file
 func parseCsv(fileName string) error {
     csvFile, err := os.Open(fileName)
     if err != nil {
