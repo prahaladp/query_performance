@@ -56,6 +56,7 @@ func TestSimpleWorker(t *testing.T) {
     close(qParams)
     wg.Wait()
     logger.Printf("results")
+    close(results)
 
     allTimes := []int64{}
     for q := range results {
