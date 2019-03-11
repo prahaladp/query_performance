@@ -1,8 +1,9 @@
 # query_performance
-# This tool measures the query performance for time series database.
-# Assumptions : the data has already been stored in the database
 
-# Usage
+This tool measures the query performance for time series database.
+Assumptions : the data has already been stored in the database
+
+Usage
 
 Usage of ./query_performance:
   -dbport int
@@ -20,16 +21,16 @@ Usage of ./query_performance:
   -workers int
         number of worker threads (default 1)
       
- # The filename is the input file which contains the time slots per host
- # for which data is required.
+The filename is the input file which contains the time slots per host
+for which data is required.
  
- # The file is in the following format
+The file is in the following format
  hostname,start_time,end_time
 host_000008,2017-01-01 08:59:22,2017-01-01 09:59:22
 host_000001,2017-01-02 13:02:02,2017-01-02 14:02:02
 ...
 
-# Sample Output 
+Sample Output 
 $ ./query_performance  --file ./testdata/query_usage.csv --workers 1 --dbport 5432
 ---------------------------------
  number of samples = 200
@@ -56,8 +57,8 @@ Hostname : host_000001
         2017-01-02 15:37:00, 18.50, 82.74
 
 
-# Sample output from the tool
-# NOTE : this is obtained from multiple runs by changing the worker threads
+Sample output from the tool
+NOTE : this is obtained from multiple runs by changing the worker threads
 
 Workers Mean              Median
 ---------------------------------------
@@ -67,10 +68,10 @@ Workers Mean              Median
 8         113.060989ms    122.369957ms
 16      148.308213ms      156.706489ms
 
-# The code should be documented to allow initial understanding of the data structures.
-# Most of the important data structures are in queryParams.go
+The code should be documented to allow initial understanding of the data structures.
+Most of the important data structures are in queryParams.go
 
-# Tests :
+Tests :
 go test -v
 === RUN   TestMedian
 --- PASS: TestMedian (0.00s)
@@ -95,7 +96,7 @@ number of time samples = 1
 PASS
 ok
 
-# NOTE : (obviously) needs more tests
+NOTE : (obviously) needs more tests
 
 $ go test -cover
 PASS
